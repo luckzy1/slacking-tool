@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>摸鱼神器</title>
+<style>
+  #home .headline,
+#home .subtitle {           /* 如果副标题也要居中就保留这行 */
+  text-align: center;
+}
+  :root{
+    --header-grad-start:#5b64ff;
+    --header-grad-end:#a63bd7;
+    --text:#0b1220;
+    --muted:#6b7280;
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --shadow:0 10px 30px rgba(16,24,40,.08);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",Roboto,system-ui,-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  }
+  body.locked, body.locked iframe{cursor:none}
+
+  /* 顶栏（仅主页可见） */
+  .topbar{
+    background:linear-gradient(90deg,var(--header-grad-start),var(--header-grad-end));
+    color:#fff;padding:20px 28px;display:flex;align-items:center;gap:14px;
+    position:sticky;top:0;z-index:5;
+  }
+  .logo{width:34px;height:34px;border-radius:10px;background:#fff1;display:grid;place-items:center;box-shadow:inset 0 0 0 2px #fff3}
+  .logo svg{width:22px;height:22px;fill:#fff}
+  .title{font-size:22px;font-weight:700;letter-spacing:.5px}
+
+  .container{max-width:1200px;margin:40px auto;padding:0 24px}
+  .headline{font-size:40px;font-weight:800;margin:6px 0 6px}
+  .subtitle{font-size:18px;color:#4b5563;margin:0 0 22px}
+  .notice{
+    background:#ffe9a8;border:1px solid #f6d26b;color:#7a5d13;
+    padding:14px 16px;border-radius:14px;box-shadow:var(--shadow);margin:18px 0 26px
+  }
+
+  .grid{
+    display:grid;gap:22px;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  }
+  .card{
+    background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:22px;border:1px solid #edf0f6;min-height:150px;cursor:pointer;
+    display:flex;flex-direction:column;justify-content:center;
+    transition:.18s transform,.18s box-shadow
+  }
+  .card:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(16,24,40,.12)}
+  .card .icon{width:54px;height:54px;border-radius:16px;background:#eef2ff;display:grid;place-items:center;margin-bottom:14px}
+  .card .icon svg{width:28px;height:28px;fill:#4f46e5}
+  .card .name{font-size:20px;font-weight:700;margin:2px 0 6px}
+  .card .desc{color:var(--muted);font-size:14px}
+
+  /* 子页面容器：仅一个边到边的 iframe，不加任何外观 */
+  .appview{position:fixed;inset:0;display:none;z-index:20;background:#fff}
+  .appview.active{display:block}
+  .appview iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+</style>
+</head>
+<body>
+  <!-- 顶栏 -->
+  <header class="topbar">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1H4V7zm0 4h16v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6z"/></svg>
+    </div>
+    <div class="title">摸鱼神器</div>
+  </header>
+
+  <!-- 主页 -->
+  <main class="container" id="home">
+    <h1 class="headline">摸鱼神器</h1>
+    <p class="subtitle">上班摸鱼专用工具，模拟各类电脑异常与工作场景</p>
+    <div class="notice">
+      使用说明：点击任意场景后会自动全屏显示；按 <b>F</b> 退出全屏后页面会自动返回。进入后点击鼠标即可锁定（Esc退出）。
+    </div>
+    <section class="grid" id="grid"><!-- 卡片由 JS 渲染 --></section>
+  </main>
+
+  <!-- 子页面：只保留 iframe，不加任何按钮或条带 -->
+  <section class="appview" id="appview" aria-hidden="true">
+    <iframe id="appFrame" sandbox="allow-scripts allow-forms allow-pointer-lock allow-modals allow-same-origin" referrerpolicy="no-referrer"></iframe>
+  </section>
+
+  <!-- ======================= 模板区（每个卡片一段 HTML） =======================
+       ★ 新增模板：复制一个 <template>，改 id="tpl-你的ID"，写入你要显示的完整 HTML。
+       ★ 这些 HTML 会通过 iframe.srcdoc 加载，完全隔离，不会被外层样式影响。
+  -->
+    <!--                                                                                                                      _____ _   _  _____ ______ _____ _______  __     ______  _    _ _____    _    _ _______ __  __ _      
+ |_   _| \ | |/ ____|  ____|  __ \__   __| \ \   / / __ \| |  | |  __ \  | |  | |__   __|  \/  | |     
+   | | |  \| | (___ | |__  | |__) | | |     \ \_/ / |  | | |  | | |__) | | |__| |  | |  | \  / | |     
+   | | | . ` |\___ \|  __| |  _  /  | |      \   /| |  | | |  | |  _  /  |  __  |  | |  | |\/| | |     
+  _| |_| |\  |____) | |____| | \ \  | |       | | | |__| | |__| | | \ \  | |  | |  | |  | |  | | |____ 
+ |_____|_| \_|_____/|______|_|  \_\ |_|       |_|  \____/ \____/|_|  \_\ |_|  |_|  |_|  |_|  |_|______|
+                                                                                                       
+                                  
+  11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ -->
+  <template id="tpl-meeting">
+    <!-- 示例：视频会议加载（你可以自由改这段 HTML 与样式/脚本） -->
+    <html><head><meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>正在加入会议…</title>
+      <style>
+        html,body{height:100%}body{margin:0;background:#0b1220;color:#e2e8f0;
+          font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+          display:grid;place-items:center}
+        .ring{position:relative;width:92px;height:92px;margin:10px auto 18px}
+        .ring::before,.ring::after{content:"";position:absolute;inset:0;border-radius:50%;
+          border:6px solid #1f2937;border-top-color:#60a5fa;animation:spin 1.06s linear infinite}
+        .ring::after{inset:10px;border-color:#111827;border-top-color:#93c5fd;animation-duration:1.55s}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        h1{margin:6px 0 4px;font-size:28px}
+        p{opacity:.7}
+      </style>
+    </head><body>
+      <div class="ring"></div>
+      <h1>正在加入会议…</h1>
+      <p>网络较慢，请稍候</p>
+    </body></html>
+  </template>
+    <!--
+2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ -->
+ <template id="tpl-电脑更新">
+    <!-- 你可自由修改这段 HTML（仅影响“视频会议加载”卡片） -->
+    <!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="color-scheme" content="dark"/>
+<title>正在进行更新…</title>
+<style>
+  html,body{height:100%}
+  body{margin:0;background:#000;color:#fff;font-family:"Segoe UI", Roboto, system-ui, -apple-system, "Noto Sans SC", "Microsoft YaHei", sans-serif;cursor:none;display:flex;align-items:center;justify-content:center}
+  /* 整体下移一点，让圆环更靠近文字 */
+  .stack{text-align:center; transform: translateY(18px);} 
+
+  .ring{position:relative;width:64px;height:64px;margin:0 auto}
+  .dot{position:absolute;top:50%;left:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff;will-change:transform}
+
+  /* 缩小圆环与文字之间的间距 */
+  .text{font-size:18px;font-weight:400;color:#fff;margin-top:12px}
+</style>
+</head>
+<body>
+  <div class="stack">
+    <div class="ring" id="ring" aria-hidden="true"></div>
+    <div class="text">更新正在进行中。<br>请不要关机。</div>
+  </div>
+
+  <script>
+    /*
+      旋转与消失/出现规则：
+      - 正常阶段两圈 → 『消失圈』：本圈内到 6 点处瞬间消失；
+      - 『出现等待』对齐头点过门 → 『出现圈』：本圈内到 6 点处一个个出现；
+      - 回到正常阶段，循环。
+    */
+    (function(){
+      const ring = document.getElementById('ring');
+
+      // ===== 可调参数 =====
+      const N = 5;                    // 点数
+      const R0 = 14;                  // 半径(px)
+      const AVG_PERIOD = 1.2;         // 每圈时长(秒)
+      const OMEGA = (Math.PI*2)/AVG_PERIOD; // 角速度基准(rad/s)
+      const SPREAD_TOP = 0.28;        // 顶部聚拢(弧度)
+      const SPREAD_BOTTOM = 0.78;     // 底部拉伸(弧度)
+      const GATE = Math.PI/2;         // 6 点位置(弧度)
+      const DISAPPEAR_AFTER_LAPS = 2; // 正常阶段转多少圈后进入消失圈
+
+      // ===== 状态 =====
+      const dots = Array.from({length:N}, ()=>{ const el=document.createElement('i'); el.className='dot'; ring.appendChild(el); return { el, visible:true }; });
+
+      const TAU = Math.PI*2;
+      const clamp = (v,min,max)=> Math.min(max, Math.max(min,v));
+      const easeOutCubic = x => 1 - Math.pow(1 - x, 3);
+      const normPos = a => { a%=TAU; return a<0? a+TAU : a; };
+      // robust 正向过门判定：prev→curr 的正向弧长是否覆盖 gate
+      const crossedGate = (prev, curr) => { const delta = normPos(curr - prev); const gap = normPos(GATE - prev); return delta>0 && gap>0 && gap<=delta + 1e-9; };
+
+      let lastTS = performance.now();
+      let lead = -Math.PI/2; // 头点角度
+      let accSpin = 0;       // 正常阶段累计角
+      let phase = 'spin';    // 'spin' | 'vanish_wait' | 'vanish' | 'respawn_wait' | 'respawn'
+      let lapAcc = 0;        // vanish/respawn 圈内累计角
+      let prevAngles = new Array(N).fill(lead);
+
+      function enterSpin(){ dots.forEach(d=>{ d.visible=true; d.el.style.display='block'; }); phase='spin'; accSpin=0; }
+
+      function step(ts){
+        const dt = clamp((ts - lastTS)/1000, 0, 0.05); lastTS = ts;
+
+        // 顶部稍慢、底部稍快（Win11 呼吸感）
+        const topPhase = lead + Math.PI/2; // 顶部=0
+        const speedScale = 0.7 + 0.3 * (1 - Math.cos(topPhase)) / 2;
+        const dLead = OMEGA * speedScale * dt;
+        const prevLead = lead;
+        lead += dLead;
+
+        // 正常阶段：累计 DISAPPEAR_AFTER_LAPS 圈后，等待头点过 6 点作为消失圈起点
+        if(phase==='spin'){
+          accSpin += dLead;
+          if(accSpin >= TAU*DISAPPEAR_AFTER_LAPS){ phase='vanish_wait'; }
+        }
+
+        // 计算 5 点角度（可见/不可见都参与布局，保持间距连续）
+        const baseSpacing = SPREAD_TOP + (SPREAD_BOTTOM - SPREAD_TOP) * (1 - Math.cos(topPhase)) / 2;
+        const angles = new Array(N); let cum=0;
+        for(let i=0;i<N;i++){
+          if(i>0){ const t=i/(N-1); cum += baseSpacing * (1 + 0.25*easeOutCubic(t)); }
+          angles[i] = lead - cum;
+        }
+
+        // ===== 阶段流转 =====
+        if(phase==='vanish_wait'){
+          // 以头点过门对齐，开始计完整『消失圈』
+          if(crossedGate(prevAngles[0], angles[0])){ phase='vanish'; lapAcc=0; }
+        }
+
+        if(phase==='vanish'){
+          lapAcc += normPos(lead - prevLead);
+          // 本圈内任何可见点过 6 点即瞬间隐藏
+          for(let i=0;i<N;i++) if(dots[i].visible && crossedGate(prevAngles[i], angles[i])){
+            dots[i].visible=false; dots[i].el.style.display='none';
+          }
+          // 一圈到达：确保全部隐藏后，立刻进入『出现等待』对齐头点
+          if(lapAcc >= TAU - 1e-6){ dots.forEach(d=>{ d.visible=false; d.el.style.display='none'; }); phase='respawn_wait'; }
+        }
+
+        if(phase==='respawn_wait'){
+          // 以头点过门对齐『出现圈』起点 —— 保证这一圈内依次出现且顺滑
+          if(crossedGate(prevAngles[0], angles[0])){ phase='respawn'; lapAcc=0; }
+        }
+
+        if(phase==='respawn'){
+          lapAcc += normPos(lead - prevLead);
+          // 隐藏的点到 6 点位置时逐个瞬间出现
+          for(let i=0;i<N;i++) if(!dots[i].visible && crossedGate(prevAngles[i], angles[i])){
+            dots[i].visible=true; dots[i].el.style.display='block';
+          }
+          // 一圈结束兜底：若有遗漏，强制补齐，然后回到正常阶段
+          if(lapAcc >= TAU - 1e-6){ dots.forEach(d=>{ d.visible=true; d.el.style.display='block'; }); enterSpin(); }
+        }
+
+        // 渲染（只绘制可见点）
+        for(let i=0;i<N;i++) if(dots[i].visible){
+          const x = Math.cos(angles[i]) * R0;
+          const y = Math.sin(angles[i]) * R0;
+          dots[i].el.style.transform = `translate(calc(50% + ${x}px), calc(50% + ${y}px))`;
+        }
+
+        prevAngles = angles;
+        requestAnimationFrame(step);
+      }
+
+      enterSpin();
+      requestAnimationFrame(step);
+    })();
+  </script>
+
+  <script>
+    // ===== 全屏控制 =====
+    (function(){
+      let locked = false; // 是否处于“右键锁定全屏”模式
+
+      const isFS = ()=> !!document.fullscreenElement;
+      const enterFS = ()=> document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(()=>{});
+      const exitFS  = ()=> document.exitFullscreen && document.exitFullscreen().catch(()=>{});
+
+      // F 键：在未锁定时切换全屏；锁定时忽略
+      document.addEventListener('keydown', (e)=>{
+        const k = e.key.toLowerCase();
+        if(k==='f'){
+          e.preventDefault();
+          if(locked) return; // 锁定时不响应 F
+          if(isFS()) exitFS(); else enterFS();
+        }
+      }, {passive:false});
+
+      // 右键：切换“锁定全屏”——进入时强制全屏；再次右键则退出全屏并解锁
+      document.addEventListener('contextmenu', async (e)=>{
+        e.preventDefault();
+        if(!locked){
+          if(!isFS()) await enterFS();
+          locked = true;
+        }else{
+          await exitFS();
+          locked = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
+
+  </template>
+  <!--
+3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+--> 
+  <!-- ============ 在这里继续添加你的模板（卡片与模板一一对应） ============
+  例如：
+  <template id="tpl-printer">
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>打印机连接失败</title>
+      <style>html,body{height:100%}body{margin:0;display:grid;place-items:center;font-family:system-ui}</style>
+    </head><body>
+      <h2>打印机连接失败</h2>
+      <p>请检查 USB 连接或驱动程序…</p>
+    </body></html>
+  </template>
+  ====================================================================== -->
+    <!--
+            _____  _____            _____          _____  _____  
+     /\   |  __ \|  __ \          / ____|   /\   |  __ \|  __ \ 
+    /  \  | |  | | |  | |        | |       /  \  | |__) | |  | |
+   / /\ \ | |  | | |  | |        | |      / /\ \ |  _  /| |  | |
+  / ____ \| |__| | |__| |        | |____ / ____ \| | \ \| |__| |
+ /_/    \_\_____/|_____/          \_____/_/    \_\_|  \_\_____/ 
+                                                                
+                                                    
+          -->                                                    
+                        
+  <script>
+    /*************** 1) 卡片配置：在这里增删改卡片 *************************
+     *  - id: 必须与模板 id 的后缀一致（tpl-xxx）
+     *  - name/desc/icon: 卡片显示内容
+     *********************************************************************/
+    const APPS = [
+      
+
+       {
+        id: "电脑更新",                            // ← 对应 <template id="tpl-meeting">
+       name: "电脑更新重启",                        // ← 卡片标题（可改）
+       desc: "正在更新中…",                       // ← 卡片副标题（可改）
+        icon: "camera"                            // ← 图标类型：camera | db | printer | code（可选）
+     },
+{ id:"meeting", name:"视频会议加载", desc:"正在加入会议…", icon:"camera" }
+
+      // 在此继续追加卡片（示例）
+      // ,{ id:"printer", name:"打印机故障", desc:"打印机连接失败", icon:"printer" }
+    ];
+
+    /*************** 2) 渲染卡片 ******************************************/
+    const grid = document.getElementById("grid");
+    APPS.forEach(a => grid.appendChild(makeCard(a)));
+
+    function makeCard(a){
+      const el = document.createElement("button");
+      el.className="card"; el.setAttribute("aria-label", a.name);
+      el.innerHTML = `
+        <div class="icon">${iconOf(a.icon)}</div>
+        <div class="name">${a.name}</div>
+        <div class="desc">${a.desc??""}</div>`;
+      el.addEventListener("click", ()=> openApp(a.id, a.name));
+      return el;
+    }
+    function iconOf(kind){
+      const m={
+        camera:`<svg viewBox="0 0 24 24"><path d="M15 10.5V7a1 1 0 0 0-1-1H5A2 2 0 0 0 3 8v8a2 2 0 0 0 2 2h9a1 1 0 0 0 1-1v-3.5l4 3V7.5l-4 3z"/></svg>`,
+        db:`<svg viewBox="0 0 24 24"><path d="M4 6c0-2.2 4-4 8-4s8 1.8 8 4-4 4-8 4-8-1.8-8-4zm0 4c0 2.2 4 4 8 4s8-1.8 8-4m-16 4c0 2.2 4 4 8 4s8-1.8 8-4"/></svg>`,
+        printer:`<svg viewBox="0 0 24 24"><path d="M6 7V3h12v4H6zm0 10v4h12v-4H6zM4 9h16a2 2 0 0 1 2 2v5H2v-5a2 2 0 0 1 2-2z"/></svg>`,
+        code:`<svg viewBox="0 0 24 24"><path d="M8 17 3 12l5-5m8 0 5 5-5 5M14 4l-4 16"/></svg>`
+      };
+      return m[kind] || m.code;
+    }
+
+    /*************** 3) 打开/关闭子页面（iframe + 全屏） *******************/
+    const appview = document.getElementById("appview");
+    const iframe  = document.getElementById("appFrame");
+
+    function openApp(id, name){
+      const tpl = document.getElementById(`tpl-${id}`);
+      if(!tpl){ alert(`未找到模板：tpl-${id}`); return; }
+      iframe.srcdoc = tpl.innerHTML;              // 以 srcdoc 方式载入，完全隔离
+      appview.classList.add("active");
+      document.getElementById("home").style.display="none";
+      location.hash = `#app=${id}`;
+      requestFs();                                 // 进入时自动全屏
+    }
+
+    function backHome(){
+      appview.classList.remove("active");
+      document.getElementById("home").style.display="";
+      iframe.srcdoc = "";                          // 清空
+      location.hash = "";
+      // 退出时确保不处于锁定态
+      locked=false; document.body.classList.remove("locked");
+    }
+
+    // 支持直接通过 #app=xxx 打开
+    window.addEventListener("load", ()=>{
+      const m = location.hash.match(/app=([\w-]+)/);
+      if(m){ const a = APPS.find(x=>x.id===m[1]); if(a) openApp(a.id,a.name); }
+    });
+
+    /*************** 4) 全屏 + 右键锁定 ************************************/
+    let locked=false;
+
+    // 右键锁定/解锁（锁定时屏蔽 F/ESC）
+    document.addEventListener("contextmenu", ev=>{
+      ev.preventDefault();
+      locked=!locked;
+      document.body.classList.toggle("locked", locked);
+      if(locked){ requestFs(); }                   // 锁定时确保处于全屏
+    }, {capture:true});
+
+    // F 键：切换全屏（锁定时无效）
+    document.addEventListener("keydown", e=>{
+      const k = e.key.toLowerCase();
+      if(k==="f" && !locked){
+        e.preventDefault();
+        toggleFs();
+      }else if(locked && (k==="f"||k==="escape")){
+        e.preventDefault();                        // 尽量阻止，但部分浏览器仍可能响应 ESC
+      }
+    });
+
+    // 退出全屏后自动返回主页（满足“按F退出后自己退回卡片界面”）
+    document.addEventListener("fullscreenchange", ()=>{
+      if(!document.fullscreenElement && appview.classList.contains("active")){
+        backHome();
+      }
+    });
+
+    function requestFs(){
+      const el=document.documentElement;
+      if(!document.fullscreenElement){
+        (el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen)?.call(el);
+      }
+    }
+    function exitFs(){
+      if(document.fullscreenElement){
+        (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen)?.call(document);
+      }
+    }
+    function toggleFs(){ document.fullscreenElement ? exitFs() : requestFs(); }
+
+    /*************** 5) 使用小抄 *******************************************
+     * 新增一个卡片：
+     *  (1) 在“模板区”添加：<template id="tpl-你的ID">你的完整HTML</template>
+     *  (2) 在 APPS 数组追加：{ id:"你的ID", name:"卡片名", desc:"描述", icon:"camera|db|printer|code" }
+     *  (3) 保存后刷新即可出现并可点击进入。退出：按 F 退出全屏会自动返回主页。
+     *********************************************************************/
+  </script>
+</body>
+</html>
