@@ -368,12 +368,36 @@
       el.addEventListener("click", ()=> openApp(a.id, a.name));
       return el;
     }
+
+                             
+//图标更换
+
+
     function iconOf(kind){
       const m={
         camera:`<svg viewBox="0 0 24 24"><path d="M15 10.5V7a1 1 0 0 0-1-1H5A2 2 0 0 0 3 8v8a2 2 0 0 0 2 2h9a1 1 0 0 0 1-1v-3.5l4 3V7.5l-4 3z"/></svg>`,
         db:`<svg viewBox="0 0 24 24"><path d="M4 6c0-2.2 4-4 8-4s8 1.8 8 4-4 4-8 4-8-1.8-8-4zm0 4c0 2.2 4 4 8 4s8-1.8 8-4m-16 4c0 2.2 4 4 8 4s8-1.8 8-4"/></svg>`,
         printer:`<svg viewBox="0 0 24 24"><path d="M6 7V3h12v4H6zm0 10v4h12v-4H6zM4 9h16a2 2 0 0 1 2 2v5H2v-5a2 2 0 0 1 2-2z"/></svg>`,
-        code:`<svg viewBox="0 0 24 24"><path d="M8 17 3 12l5-5m8 0 5 5-5 5M14 4l-4 16"/></svg>`
+        code:`<svg viewBox="0 0 24 24"><path d="M8 17 3 12l5-5m8 0 5 5-5 5M14 4l-4 16"/></svg>`,
+   calendar:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v5H3V6a2 2 0 0 1 2-2h2V2zm14 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8h18z"/></svg>`,
+    doc:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/></svg>`,
+    sheet:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm0 4v2h16V9H4zm0 4v2h16v-2H4z"/></svg>`,
+    pdf:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM8 12h4a2 2 0 0 1 0 4H8v-4z"/></svg>`,
+    image:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm3 3a2 2 0 1 0 4 0 2 2 0 0 0-4 0zm-3 9l5-5 3 3 4-4 5 6H4z"/></svg>`,
+    video:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v12H3V6zm6 3v6l6-3-6-3z"/></svg>`,
+    audio:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10h4l4-3v10l-4-3H3v-4zm12-3v3a3 3 0 0 1 0 6v3a6 6 0 0 0 0-12z"/></svg>`,
+    mail:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 6h20v12H2V6zm10 7L3.5 7.5h17L12 13z"/></svg>`,
+    folder:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h6l2 2h10a2 2 0 0 1 2 2v8H1V8a2 2 0 0 1 2-2z"/></svg>`,
+    cloud:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18a4 4 0 1 1 0-8 6 6 0 0 1 11.3 2A3.5 3.5 0 1 1 19 18H7z"/></svg>`,
+    download:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 3h2v8h3l-4 4-4-4h3V3zM4 19h16v2H4z"/></svg>`,
+    upload:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 21h-2v-8H8l4-4 4 4h-3v8zM4 5h16V3H4z"/></svg>`,
+    chart:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20h18v2H1V4h2v16zm4 0v-9h3v9H7zm5 0V5h3v15h-3zm5 0v-7h3v7h-3z"/></svg>`,
+    link:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 13a4 4 0 0 1 0-6l3-3a4 4 0 1 1 6 6l-1 1h-3l2-2a2 2 0 1 0-3-3l-3 3a2 2 0 1 0 0 3h2v2H7zm10-2a4 4 0 0 1 0 6l-3 3a4 4 0 1 1-6-6l1-1h3l-2 2a2 2 0 1 0 3 3l3-3a2 2 0 1 0 0-3h-2v-2h3z"/></svg>`,
+    terminal:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v16H3V4zm3 4l4 4-4 4H4l4-4-4-4h2zm7 8h5v-2h-5v2z"/></svg>`,
+    warning:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l10 18H2L12 3zm-1 6h2v6h-2V9zm0 8h2v2h-2v-2z"/></svg>`,
+    settings:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 7h16v2H4V7zm0 4h10v2H4v-2zm0 4h16v2H4v-2zM17 9h3v2h-3V9zm-5 4h3v2h-3v-2z"/></svg>`,
+    browser:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm0 3v2h18V7H3z"/></svg>`
+  
       };
       return m[kind] || m.code;
     }
